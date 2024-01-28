@@ -20,8 +20,8 @@ Follow the instructions in the project to set up Azure Storage Account and Azure
 ## Directory Structure
 
 ## Usage
-1. Clone this repository: `git clone https://github.com/yourusername/data-engineering-ci-cd.git`
-2. Navigate to the project directory: `cd data-engineering-ci-cd`
+1. Clone this repository: `git clone https://github.com/Ajayghimire9/CICD_Terraform_Azure`
+2. Navigate to the project directory: `CICD_Terraform_Azure`
 3. Follow the instructions in each module's README to set up Azure resources.
 4. Customize configurations as per your project requirements.
 
@@ -31,4 +31,12 @@ Contributions are welcome! Feel free to submit issues, fork the repository, or c
 # Thanks code with you for this project
 
 
-Happy Data Engineering!
+This project focuses on implementing Continuous Integration/Continuous Deployment (CI/CD) practices in the field of data engineering. As data pipelines become increasingly complex, the need for efficient and automated deployment processes becomes crucial. CI/CD offers a systematic approach to address these challenges and ensure the reliability and efficiency of data engineering workflows.
+
+Key Features:
+
+Utilizes Azure cloud services for data engineering tasks.
+Employs Terraform for infrastructure as code (IaC) to define and provision Azure resources.
+Demonstrates how CI/CD practices can enhance data pipeline development and deployment.
+Provides step-by-step instructions and configuration files for setting up Azure Storage Account and Azure Data Factory using Terraform.
+Offers a structured directory layout for better organization of Terraform modules.
