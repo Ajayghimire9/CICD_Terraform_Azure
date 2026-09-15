@@ -1,33 +1,22 @@
 resource "azurerm_storage_account" "storage" {
-  name = var.storage_account_name
-  resource_group_name = var.resource_group_name
-  location = var.location
-  account_tier = "Standard"
-  account_replication_type = "LRS"
-  tags = {
-    environment = "development"
+  name                            = var.storage_account_name
+  resource_group_name             = azurerm_resource_group.rg.name
+  location                        = azurerm_resource_group.rg.location
+  account_tier                    = "Standard"
+  account_replication_type        = "LRS"
+  min_tls_version                 = "TLS1_2"
+  allow_nested_items_to_be_public = false
+  tags                            = var.tags
+  blob_properties {
+    delete_retention_policy { days = 7 }
   }
 }
-
 resource "azurerm_storage_container" "create_container" {
-  for_each = {
-    source = var.source_folder_name,
-    destination = var.destination_folder_name
-  }
-
-  name = each.key
-  storage_account_name = azurerm_storage_account.storage.name
-  container_access_type = var.container_access_type
+  for_each              = { source = var.source_folder_name, destination = var.destination_folder_name }
+  name                  = each.value
+  storage_account_name  = azurerm_storage_account.storage.name
+  container_access_type = "private"
 }
-
-resource "azurerm_storage_blob" "create_test_file" {
-  name                   = "test.txt"
-  storage_account_name   = azurerm_storage_account.storage.name
-  storage_container_name = azurerm_storage_container.create_container["source"].name
-  type                   = "Block"
-  source_content = "Hello CodeWithYu Community!"
-}
-
-output "storage_account_key" {
-  value = azurerm_storage_account.storage.primary_access_key
+output "storage_account_id" {
+  value = azurerm_storage_account.storage.id
 }

@@ -1,42 +1,38 @@
-# CICD_Terraform_Azure
+# Azure Data Foundation
 
-# Data Engineering CI/CD with Azure and Terraform
+Terraform for a small Azure data landing zone.
 
-## Overview
-This project demonstrates the implementation of Continuous Integration/Continuous Deployment (CI/CD) practices in data engineering using Azure and Terraform. As data pipelines become more complex, efficient and automated deployment becomes crucial. CI/CD offers a systematic approach to managing these challenges.
+This repository defines a resource group, private blob containers and an Azure Data Factory copy pipeline. The configuration is self-contained and uses a factory managed identity to access storage.
 
-In this project, we explore how to leverage Azure and Terraform to implement CI/CD in data engineering workflows, ensuring more reliable data pipelines, quicker iterations, and reduced manual errors.
+## Run locally
 
-## Prerequisites
-Before you begin, ensure you have the following prerequisites:
+```bash
+cp terraform.tfvars.example terraform.tfvars
+# Choose globally unique resource names, then authenticate with Azure CLI.
+terraform init -backend=false
+terraform fmt -check
+terraform validate
+terraform plan
+```
 
-- Azure Account with a subscription (you can sign up for a free account [here](https://azure.com/free))
-- Azure CLI (download [here](https://aka.ms/azure-cli))
-- Terraform CLI (download [here](https://www.terraform.io/downloads.html))
+## Design decisions
 
-## Getting Started
-Follow the instructions in the project to set up Azure Storage Account and Azure Data Factory using Terraform. The project includes detailed configuration files and examples for a smooth setup.
+Duplicate variable declarations and references to missing modules have been removed.
 
-## Directory Structure
+The source and destination dataset locations use Azure Blob Storage rather than SFTP blocks. Copy activities include retry and timeout settings.
 
-## Usage
-1. Clone this repository: `git clone https://github.com/Ajayghimire9/CICD_Terraform_Azure`
-2. Navigate to the project directory: `CICD_Terraform_Azure`
-3. Follow the instructions in each module's README to set up Azure resources.
-4. Customize configurations as per your project requirements.
+Data Factory receives Storage Blob Data Contributor through its system-assigned identity. Storage account keys are not exported.
 
-## Contributions
-Contributions are welcome! Feel free to submit issues, fork the repository, or create pull requests for improvements or bug fixes.
+Terraform state and local variable files are excluded from the current tree. CI checks formatting and configuration validity without applying resources.
 
-# Thanks code with you for this project
+## Technology
 
+Terraform 1.6+, AzureRM 3.117, Azure Blob Storage, Data Factory, managed identity, GitHub Actions.
 
-This project focuses on implementing Continuous Integration/Continuous Deployment (CI/CD) practices in the field of data engineering. As data pipelines become increasingly complex, the need for efficient and automated deployment processes becomes crucial. CI/CD offers a systematic approach to address these challenges and ensure the reliability and efficiency of data engineering workflows.
+## Validation
 
-Key Features:
+Run `terraform fmt -check` and `terraform validate`. The Python structural check additionally parses the HCL and checks that state files are absent.
 
-Utilizes Azure cloud services for data engineering tasks.
-Employs Terraform for infrastructure as code (IaC) to define and provision Azure resources.
-Demonstrates how CI/CD practices can enhance data pipeline development and deployment.
-Provides step-by-step instructions and configuration files for setting up Azure Storage Account and Azure Data Factory using Terraform.
-Offers a structured directory layout for better organization of Terraform modules.
+## Scope and limitations
+
+No Azure resources are created by this repository update. Review the plan and configure an appropriate remote backend before a real deployment. Existing installations may require state migration because resource addresses changed. A copy run expects files under the source container’s incoming path; no schedule is enabled.

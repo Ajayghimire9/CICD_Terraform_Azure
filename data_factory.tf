@@ -1,112 +1,47 @@
 resource "azurerm_data_factory" "adf" {
   name                = var.df_name
-  resource_group_name = var.resource_group_name
-  location            = var.location
-
-  identity {
-    type = "SystemAssigned"
-  }
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  tags                = var.tags
+  identity { type = "SystemAssigned" }
 }
-
-data "azurerm_storage_account" "source_folder_storage" {
-  name                = var.storage_account_name
-  resource_group_name = var.resource_group_name
+resource "azurerm_role_assignment" "factory_blob_access" {
+  scope                = azurerm_storage_account.storage.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_data_factory.adf.identity[0].principal_id
 }
-
-data "azurerm_storage_account" "destination_folder_storage" {
-  name                = var.storage_account_name
-  resource_group_name = var.resource_group_name
+resource "azurerm_data_factory_linked_service_azure_blob_storage" "storage" {
+  name                 = "managed-identity-storage"
+  data_factory_id      = azurerm_data_factory.adf.id
+  service_endpoint     = azurerm_storage_account.storage.primary_blob_endpoint
+  use_managed_identity = true
 }
-
-resource "azurerm_data_factory_linked_service_azure_blob_storage" "source" {
-  name              = "source-storage"
-  data_factory_id   = azurerm_data_factory.adf.id
-  connection_string = data.azurerm_storage_account.source_folder_storage.primary_connection_string
-}
-
-resource "azurerm_data_factory_linked_service_azure_blob_storage" "destination" {
-  name              = "destination-storage"
-  data_factory_id   = azurerm_data_factory.adf.id
-  connection_string = data.azurerm_storage_account.destination_folder_storage.primary_connection_string
-}
-
-#source and sink dataset to blob storage
-resource "azurerm_data_factory_dataset_binary" "source_dataset" {
-
-  name                = "source_dataset"
+resource "azurerm_data_factory_dataset_binary" "dataset" {
+  for_each            = azurerm_storage_container.create_container
+  name                = "${each.key}_dataset"
   data_factory_id     = azurerm_data_factory.adf.id
-  linked_service_name = azurerm_data_factory_linked_service_azure_blob_storage.source.name
-
-  sftp_server_location {
-    filename = "test.txt"
-    path     = "source"
+  linked_service_name = azurerm_data_factory_linked_service_azure_blob_storage.storage.name
+  azure_blob_storage_location {
+    container = each.value.name
+    path      = "incoming"
   }
 }
-
-resource "azurerm_data_factory_dataset_binary" "destination_dataset" {
-
-  name                = "destination_dataset"
-  data_factory_id     = azurerm_data_factory.adf.id
-  linked_service_name = azurerm_data_factory_linked_service_azure_blob_storage.destination.name
-
-  sftp_server_location {
-    filename = "test-${formatdate("YYYY-MM-DD-hh-mm-ss", timestamp() )}.txt"
-    path     = "destination"
-  }
-}
-
 resource "azurerm_data_factory_pipeline" "copy_data" {
-
   name            = "copy_data_pipeline"
   data_factory_id = azurerm_data_factory.adf.id
-
-  activities_json = <<JSON
-[
-  {
-    "name": "CopyFromSourceToDestination",
-    "type": "Copy",
-    "typeProperties": {
-      "source": {
-        "type": "BinarySource",
-        "recursive": true
-      },
-      "sink": {
-        "type": "BinarySink"
-      },
-      "enableStaging": false
-    },
-    "policy": {
-      "timeout": "7.00:00:00",
-      "retry": 0,
-      "retryIntervalInSeconds": 30,
-      "secureInput": false,
-      "secureOutput": false
-    },
-    "scheduler": {
-      "frequency": "Day",
-      "interval": 1
-    },
-    "external": true,
-     "inputs": [
-      {
-        "referenceName": "source_dataset",
-        "type": "DatasetReference"
-      }
-    ],
-    "outputs": [
-      {
-        "referenceName": "destination_dataset",
-        "type": "DatasetReference"
-      }
-    ]
-  }
-]
-JSON
-
-  depends_on = [
-    azurerm_data_factory_dataset_binary.source_dataset,
-    azurerm_data_factory_dataset_binary.destination_dataset,
-  ]
+  activities_json = jsonencode([{
+    name   = "CopyFromSourceToDestination"
+    type   = "Copy"
+    policy = { timeout = "0.01:00:00", retry = 2, retryIntervalInSeconds = 30 }
+    typeProperties = {
+      source = { type = "BinarySource", storeSettings = { type = "AzureBlobStorageReadSettings", recursive = true } }
+      sink   = { type = "BinarySink", storeSettings = { type = "AzureBlobStorageWriteSettings" } }
+    }
+    inputs  = [{ referenceName = azurerm_data_factory_dataset_binary.dataset["source"].name, type = "DatasetReference" }]
+    outputs = [{ referenceName = azurerm_data_factory_dataset_binary.dataset["destination"].name, type = "DatasetReference" }]
+  }])
+  depends_on = [azurerm_role_assignment.factory_blob_access]
 }
-
-
+output "data_factory_id" {
+  value = azurerm_data_factory.adf.id
+}

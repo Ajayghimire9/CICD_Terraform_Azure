@@ -32,3 +32,17 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+
+# Local development and generated outputs
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+*.egg-info/
+build/
+dist/
+artifacts/
+mlruns/
+mlflow.db
+*.log
+.env

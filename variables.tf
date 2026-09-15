@@ -1,30 +1,37 @@
-variable "storage_account_name" {
-  description = "The storage account name"
-  type        = string
-}
-
 variable "resource_group_name" {
-  description = "The name of the resource group"
   type        = string
+  description = "Resource group for this demonstration."
+  default     = "rg-data-foundation-dev"
 }
-
 variable "location" {
-  description = "The location/region of the resource"
   type        = string
+  description = "Azure deployment region."
+  default     = "westeurope"
 }
-
+variable "tags" {
+  type        = map(string)
+  description = "Ownership and environment metadata."
+  default     = { environment = "development", project = "data-foundation" }
+}
+variable "storage_account_name" {
+  type        = string
+  description = "Globally unique lowercase alphanumeric name, 3-24 characters."
+  validation {
+    condition     = can(regex("^[a-z0-9]{3,24}$", var.storage_account_name))
+    error_message = "Use 3-24 lowercase letters or digits."
+  }
+}
+variable "df_name" {
+  type        = string
+  description = "Globally unique Data Factory name."
+}
 variable "source_folder_name" {
-  description = "The source folder name"
   type        = string
+  description = "Source blob container."
+  default     = "source"
 }
-
 variable "destination_folder_name" {
-  description = "The destination folder name"
   type        = string
-}
-
-variable "container_access_type" {
-  description = "The access type for the storage account container"
-  type        = string
-  default     = "private"
+  description = "Destination blob container."
+  default     = "destination"
 }
